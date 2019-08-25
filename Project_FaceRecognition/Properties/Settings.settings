@@ -1,0 +1,18 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Project_FaceRecognition.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="adminUsername" Type="System.String" Scope="User">
+      <Value Profile="(Default)">admin</Value>
+    </Setting>
+    <Setting Name="adminPassword" Type="System.String" Scope="User">
+      <Value Profile="(Default)">admin</Value>
+    </Setting>
+    <Setting Name="appName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Face Recognition Application</Value>
+    </Setting>
+    <Setting Name="appDescriptionText" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Built and Developed by bla bla bla</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
