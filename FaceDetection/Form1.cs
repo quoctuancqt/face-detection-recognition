@@ -32,8 +32,8 @@ namespace FaceDetection
                 capture = new VideoCapture();
                 var cascaeClassifierPath = Path.GetFullPath(@"../../data/haarcascade_frontalface_default.xml");
                 face = new CascadeClassifier(cascaeClassifierPath);
-                recognizerEngine = new RecognizerEngine($"sample.db", $"{path}TrainedFaces.xml");
                 dataStoreAccess = new DataStoreAccess("sample.db");
+                recognizerEngine = new RecognizerEngine($"sample.db", $"{path}TrainedFaces.xml", dataStoreAccess);
                 recognizerEngine.TrainRecognizer();
                 timer1.Enabled = true;
                 timer1.Start();
@@ -45,27 +45,30 @@ namespace FaceDetection
             if (capture != null)
             {
                 currentFrame = capture.QueryFrame();
-                var imgSrc = currentFrame.ToImage<Bgr, byte>();
-                var faces = face.DetectMultiScale(imgSrc, 1.2, 10, new Size(20, 20));
-                foreach (var face in faces)
+                using (var imgSrc = currentFrame.ToImage<Bgr, byte>())
                 {
-                    var userName = string.Empty;
-                    try
+                    var faces = face.DetectMultiScale(imgSrc, 1.2, 10, new Size(20, 20), Size.Empty);
+                    foreach (var face in faces)
                     {
+                        var userName = string.Empty;
                         var grayFace = imgSrc.Copy(face).Convert<Gray, byte>();
                         grayFace._EqualizeHist();
-                        var userId = recognizerEngine.RecognizeUser(grayFace.Resize(320, 240, Inter.Cubic));
-                        userName = dataStoreAccess.GetUsername(userId);
-                    }
-                    catch (Exception ex)
-                    {
-                        userName = "Unknown";
-                    }
+                        var userId = recognizerEngine.RecognizeUser(grayFace.Resize(100, 100, Inter.Cubic));
+                        if (userId == -1)
+                        {
+                            userName = "Unknown";
+                        }
+                        else
+                        {
+                            userName = dataStoreAccess.GetUsername(userId);
+                        }
 
-                    imgSrc.Draw(userName, new Point(face.X - 2, face.Y - 2), FontFace.HersheyTriplex, 0.5d, new Bgr(Color.LightGreen));
-                    imgSrc.Draw(face, new Bgr(0, 0, 255), 2);
+
+                        imgSrc.Draw(userName, new Point(face.X - 2, face.Y - 2), FontFace.HersheyTriplex, 0.5d, new Bgr(Color.LightGreen));
+                        imgSrc.Draw(face, new Bgr(0, 0, 255), 2);
+                    }
+                    pictureBox1.Image = imgSrc.Bitmap;
                 }
-                pictureBox1.Image = imgSrc.Bitmap;
             }
         }
 
@@ -73,15 +76,17 @@ namespace FaceDetection
         {
             if (!string.IsNullOrEmpty(txtUserName.Text))
             {
-                var imgSrc = currentFrame.ToImage<Bgr, byte>();
-                var faces = face.DetectMultiScale(imgSrc, 1.2, 10, new Size(20, 20));
-                TrainedFace = imgSrc.Copy(faces[0]).Convert<Gray, byte>().Resize(320, 240, Inter.Cubic);
-                TrainedFace._EqualizeHist();
-                ptbAddFace.Image = TrainedFace.Bitmap;
+                using (var imgSrc = currentFrame.ToImage<Bgr, byte>())
+                {
+                    var faces = face.DetectMultiScale(imgSrc, 1.2, 10, new Size(20, 20), Size.Empty);
+                    TrainedFace = imgSrc.Copy(faces[0]).Convert<Gray, byte>().Resize(100, 100, Inter.Cubic);
+                    TrainedFace._EqualizeHist();
+                    ptbAddFace.Image = TrainedFace.Bitmap;
 
-                dataStoreAccess.SaveFace(txtUserName.Text, ConvertImageToBytes(TrainedFace.Bitmap));
+                    dataStoreAccess.SaveFace(txtUserName.Text, ConvertImageToBytes(TrainedFace.Bitmap));
 
-                recognizerEngine.TrainRecognizer();
+                    recognizerEngine.TrainRecognizer();
+                }
             }
             else
             {
@@ -91,9 +96,11 @@ namespace FaceDetection
 
         private byte[] ConvertImageToBytes(Bitmap bitmap)
         {
-            var ms = new MemoryStream();
-            bitmap.Save(ms, ImageFormat.Png);
-            return ms.ToArray();
+            using (var ms = new MemoryStream())
+            {
+                bitmap.Save(ms, ImageFormat.Png);
+                return ms.ToArray();
+            }
         }
     }
 }
