@@ -3,6 +3,7 @@ using Emgu.CV.CvEnum;
 using Emgu.CV.Face;
 using Emgu.CV.Structure;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 
@@ -25,24 +26,26 @@ namespace FaceDetection
             _faceRecognizerLBPH = new LBPHFaceRecognizer(4, 8, 8, 8, 5000);
         }
 
-        public bool TrainRecognizer()
+        public RecognizerEngine() { }
+
+        public bool TrainRecognizer(ref List<Mat> faceImages, ref List<int> faceLabels)
         {
             var allFaces = _dataStoreAccess.CallFaces("ALL_USERS");
             if (allFaces != null)
             {
-                var faceImages = new Mat[allFaces.Count];
-                var faceLabels = new int[allFaces.Count];
+                //faceImages = new Mat[allFaces.Count];
+                //faceLabels = new int[allFaces.Count];
                 for (int i = 0; i < allFaces.Count; i++)
                 {
                     Stream stream = new MemoryStream();
                     stream.Write(allFaces[i].Image, 0, allFaces[i].Image.Length);
                     var faceImage = new Image<Gray, byte>(new Bitmap(stream));
-                    faceImages[i] = faceImage.Resize(100, 100, Inter.Cubic).Mat;
-                    faceLabels[i] = allFaces[i].UserId;
+                    faceImages.Add(faceImage.Resize(100, 100, Inter.Cubic).Mat);
+                    faceLabels.Add(allFaces[i].UserId);
                 }
-                _faceRecognizer.Train(faceImages, faceLabels);
-                _faceRecognizerFisher.Train(faceImages, faceLabels);
-                _faceRecognizerLBPH.Train(faceImages, faceLabels);
+                _faceRecognizer.Train(faceImages.ToArray(), faceLabels.ToArray());
+                //_faceRecognizerFisher.Train(faceImages.ToArray(), faceLabels.ToArray());
+                //_faceRecognizerLBPH.Train(faceImages.ToArray(), faceLabels.ToArray());
                 _faceRecognizer.Write(_recognizerFilePath);
             }
             return true;
@@ -54,14 +57,11 @@ namespace FaceDetection
             _faceRecognizer.Read(_recognizerFilePath);
         }
 
-        public int RecognizeUser(Image<Gray, byte> userImage)
+        public int RecognizeUser(Image<Gray, byte> userImage, List<Mat> faceImages)
         {
-            //Stream stream = new MemoryStream();
-            //stream.Write(userImage, 0, userImage.Length);
-            //var faceImage = new Image<Gray, byte>(new Bitmap(stream));
-            //_faceRecognizer.Read(_recognizerFilePath);
-            //_faceRecognizerFisher.Read(_recognizerFilePath);
-            //_faceRecognizerLBPH.Read(_recognizerFilePath);
+            _faceRecognizer.Read(_recognizerFilePath);
+            _faceRecognizerFisher.Read(_recognizerFilePath);
+            _faceRecognizerLBPH.Read(_recognizerFilePath);
 
             var result = _faceRecognizer.Predict(userImage);
             var resultFish = _faceRecognizerFisher.Predict(userImage);
@@ -79,7 +79,21 @@ namespace FaceDetection
                 return -1;
             }
 
-            return -1;
+            return result.Label;
+        }
+
+        public List<Mat> Recognize(Image<Gray, byte> userImage, List<Mat> faceImages)
+        {
+            var result = new List<Mat>();
+            long matchTime;
+
+            foreach (var face in faceImages)
+            {
+                result.Add(DrawMatches.Draw(userImage.Mat, face, out matchTime));
+
+            }
+
+            return result;
         }
     }
 }

@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
 using Emgu.CV;
@@ -20,6 +22,10 @@ namespace FaceDetection
         private Mat currentFrame;
         private Image<Gray, byte> TrainedFace = null;
         private string path = AppDomain.CurrentDomain.BaseDirectory;
+        private string cascaeClassifierPath = Path.GetFullPath(@"../../data/haarcascade_frontalface_default.xml");
+        private string cascaeClassifierEyePath = Path.GetFullPath(@"../../data/haarcascade_eye.xml");
+        private List<Mat> faceImages = new List<Mat>();
+        private List<string> faceLabels = new List<string>();
         public Form1()
         {
             InitializeComponent();
@@ -30,11 +36,11 @@ namespace FaceDetection
             if (capture == null)
             {
                 capture = new VideoCapture();
-                var cascaeClassifierPath = Path.GetFullPath(@"../../data/haarcascade_frontalface_default.xml");
                 face = new CascadeClassifier(cascaeClassifierPath);
-                dataStoreAccess = new DataStoreAccess("sample.db");
-                recognizerEngine = new RecognizerEngine($"sample.db", $"{path}TrainedFaces.xml", dataStoreAccess);
-                recognizerEngine.TrainRecognizer();
+                //dataStoreAccess = new DataStoreAccess("sample.db");
+                //recognizerEngine = new RecognizerEngine($"sample.db", $"{path}TrainedFaces.xml", dataStoreAccess);
+                //recognizerEngine.TrainRecognizer(ref faceImages, ref faceLabels);
+                recognizerEngine = new RecognizerEngine();
                 timer1.Enabled = true;
                 timer1.Start();
             }
@@ -44,31 +50,51 @@ namespace FaceDetection
         {
             if (capture != null)
             {
+                long detectionTime;
+                List<Rectangle> faces = new List<Rectangle>();
+                List<Rectangle> eyes = new List<Rectangle>();
+
                 currentFrame = capture.QueryFrame();
-                using (var imgSrc = currentFrame.ToImage<Bgr, byte>())
+                var imgSrc = currentFrame.ToImage<Bgr, byte>();
+                //using (var imgSrc = currentFrame.ToImage<Bgr, byte>())
+                //{
+                //    var faces = face.DetectMultiScale(imgSrc, 1.2, 10, new Size(20, 20), Size.Empty);
+                //    foreach (var face in faces)
+                //    {
+                //        var userName = string.Empty;
+                //        var grayFace = imgSrc.Copy(face).Convert<Gray, byte>();
+                //        grayFace._EqualizeHist();
+                //        var userId = recognizerEngine.RecognizeUser(grayFace.Resize(100, 100, Inter.Cubic));
+                //        if (userId == -1)
+                //        {
+                //            userName = "Unknown";
+                //        }
+                //        else
+                //        {
+                //            userName = dataStoreAccess.GetUsername(userId);
+                //        }
+
+
+                //        imgSrc.Draw(userName, new Point(face.X - 2, face.Y - 2), FontFace.HersheyTriplex, 0.5d, new Bgr(Color.LightGreen));
+                //        imgSrc.Draw(face, new Bgr(0, 0, 255), 2);
+                //    }
+                //    pictureBox1.Image = imgSrc.Bitmap;
+                //}
+
+                DetectFace.Detect(imgSrc, cascaeClassifierPath, cascaeClassifierEyePath, faces, eyes, out detectionTime);
+
+                foreach (Rectangle face in faces)
                 {
-                    var faces = face.DetectMultiScale(imgSrc, 1.2, 10, new Size(20, 20), Size.Empty);
-                    foreach (var face in faces)
-                    {
-                        var userName = string.Empty;
-                        var grayFace = imgSrc.Copy(face).Convert<Gray, byte>();
-                        grayFace._EqualizeHist();
-                        var userId = recognizerEngine.RecognizeUser(grayFace.Resize(100, 100, Inter.Cubic));
-                        if (userId == -1)
-                        {
-                            userName = "Unknown";
-                        }
-                        else
-                        {
-                            userName = dataStoreAccess.GetUsername(userId);
-                        }
-
-
-                        imgSrc.Draw(userName, new Point(face.X - 2, face.Y - 2), FontFace.HersheyTriplex, 0.5d, new Bgr(Color.LightGreen));
-                        imgSrc.Draw(face, new Bgr(0, 0, 255), 2);
-                    }
-                    pictureBox1.Image = imgSrc.Bitmap;
+                    CvInvoke.Rectangle(imgSrc, face, new Bgr(Color.Red).MCvScalar, 2);
+                    var grayFace = imgSrc.Convert<Gray, byte>();
+                    var result = recognizerEngine.Recognize(grayFace, faceImages);
+                    ptbMatchFace.Image = result.Count > 0 ? result.First().Bitmap : null;
                 }
+
+                foreach (Rectangle eye in eyes)
+                    CvInvoke.Rectangle(imgSrc, eye, new Bgr(Color.Blue).MCvScalar, 2);
+
+                pictureBox1.Image = imgSrc.Bitmap;
             }
         }
 
@@ -78,14 +104,17 @@ namespace FaceDetection
             {
                 using (var imgSrc = currentFrame.ToImage<Bgr, byte>())
                 {
-                    var faces = face.DetectMultiScale(imgSrc, 1.2, 10, new Size(20, 20), Size.Empty);
-                    TrainedFace = imgSrc.Copy(faces[0]).Convert<Gray, byte>().Resize(100, 100, Inter.Cubic);
+                    //var faces = face.DetectMultiScale(imgSrc, 1.2, 10, new Size(20, 20), Size.Empty);
+                    TrainedFace = imgSrc.Convert<Gray, byte>();
                     TrainedFace._EqualizeHist();
                     ptbAddFace.Image = TrainedFace.Bitmap;
 
-                    dataStoreAccess.SaveFace(txtUserName.Text, ConvertImageToBytes(TrainedFace.Bitmap));
+                    //dataStoreAccess.SaveFace(txtUserName.Text, ConvertImageToBytes(TrainedFace.Bitmap));
 
-                    recognizerEngine.TrainRecognizer();
+                    //recognizerEngine.TrainRecognizer();
+
+                    faceImages.Add(TrainedFace.Mat);
+                    faceLabels.Add(txtUserName.Text);
                 }
             }
             else

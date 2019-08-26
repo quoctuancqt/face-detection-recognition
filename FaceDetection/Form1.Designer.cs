@@ -35,9 +35,12 @@
             this.ptbAddFace = new System.Windows.Forms.PictureBox();
             this.txtUserName = new System.Windows.Forms.TextBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.ptbMatchFace = new System.Windows.Forms.PictureBox();
+            this.lblMatchFace = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ptbAddFace)).BeginInit();
             this.groupBox1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.ptbMatchFace)).BeginInit();
             this.SuspendLayout();
             // 
             // pictureBox1
@@ -67,6 +70,7 @@
             this.ptbAddFace.Location = new System.Drawing.Point(6, 21);
             this.ptbAddFace.Name = "ptbAddFace";
             this.ptbAddFace.Size = new System.Drawing.Size(134, 119);
+            this.ptbAddFace.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.ptbAddFace.TabIndex = 2;
             this.ptbAddFace.TabStop = false;
             // 
@@ -74,7 +78,7 @@
             // 
             this.txtUserName.Location = new System.Drawing.Point(6, 155);
             this.txtUserName.Name = "txtUserName";
-            this.txtUserName.Size = new System.Drawing.Size(134, 22);
+            this.txtUserName.Size = new System.Drawing.Size(134, 20);
             this.txtUserName.TabIndex = 3;
             // 
             // groupBox1
@@ -89,9 +93,29 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Train Face";
             // 
+            // ptbMatchFace
+            // 
+            this.ptbMatchFace.Location = new System.Drawing.Point(652, 269);
+            this.ptbMatchFace.Name = "ptbMatchFace";
+            this.ptbMatchFace.Size = new System.Drawing.Size(134, 94);
+            this.ptbMatchFace.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.ptbMatchFace.TabIndex = 5;
+            this.ptbMatchFace.TabStop = false;
+            // 
+            // lblMatchFace
+            // 
+            this.lblMatchFace.AutoSize = true;
+            this.lblMatchFace.Location = new System.Drawing.Point(652, 232);
+            this.lblMatchFace.Name = "lblMatchFace";
+            this.lblMatchFace.Size = new System.Drawing.Size(64, 13);
+            this.lblMatchFace.TabIndex = 6;
+            this.lblMatchFace.Text = "Match Face";
+            // 
             // Form1
             // 
             this.ClientSize = new System.Drawing.Size(809, 484);
+            this.Controls.Add(this.lblMatchFace);
+            this.Controls.Add(this.ptbMatchFace);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.pictureBox1);
             this.Name = "Form1";
@@ -101,7 +125,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.ptbAddFace)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.ptbMatchFace)).EndInit();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -117,6 +143,8 @@
         private System.Windows.Forms.PictureBox ptbAddFace;
         private System.Windows.Forms.TextBox txtUserName;
         private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.PictureBox ptbMatchFace;
+        private System.Windows.Forms.Label lblMatchFace;
     }
 }
 
