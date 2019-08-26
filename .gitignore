@@ -67,3 +67,5 @@
 /BE/Apex.Web/.vs/Apex.Web/v16/Server/sqlite3/*.ide
 /BE/Apex.Web/.vs/Apex.Web/v16/Server/sqlite3/*.ide-shm
 /BE/Apex.Web/.vs/Apex.Web/v16/Server/sqlite3/*.ide-wal
+/FaceDetection/obj
+/FaceDetection/bin
