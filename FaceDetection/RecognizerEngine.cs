@@ -2,6 +2,7 @@
 using Emgu.CV.CvEnum;
 using Emgu.CV.Face;
 using Emgu.CV.Structure;
+using Emgu.CV.Util;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -22,8 +23,8 @@ namespace FaceDetection
             _recognizerFilePath = recognizerFilePath;
             _dataStoreAccess = dataStoreAccess;
             _faceRecognizer = new EigenFaceRecognizer(4, 5000);
-            _faceRecognizerFisher = new FisherFaceRecognizer(4, 5000);
-            _faceRecognizerLBPH = new LBPHFaceRecognizer(4, 8, 8, 8, 5000);
+            //_faceRecognizerFisher = new FisherFaceRecognizer(4, 5000);
+            //_faceRecognizerLBPH = new LBPHFaceRecognizer(4, 8, 8, 8, 5000);
         }
 
         public RecognizerEngine() { }
@@ -33,8 +34,6 @@ namespace FaceDetection
             var allFaces = _dataStoreAccess.CallFaces("ALL_USERS");
             if (allFaces != null)
             {
-                //faceImages = new Mat[allFaces.Count];
-                //faceLabels = new int[allFaces.Count];
                 for (int i = 0; i < allFaces.Count; i++)
                 {
                     Stream stream = new MemoryStream();
@@ -57,40 +56,51 @@ namespace FaceDetection
             _faceRecognizer.Read(_recognizerFilePath);
         }
 
-        public int RecognizeUser(Image<Gray, byte> userImage, List<Mat> faceImages)
+        public int RecognizeUser(Image<Gray, byte> userImage)
         {
             _faceRecognizer.Read(_recognizerFilePath);
-            _faceRecognizerFisher.Read(_recognizerFilePath);
-            _faceRecognizerLBPH.Read(_recognizerFilePath);
+            //_faceRecognizerFisher.Read(_recognizerFilePath);
+            //_faceRecognizerLBPH.Read(_recognizerFilePath);
 
             var result = _faceRecognizer.Predict(userImage);
-            var resultFish = _faceRecognizerFisher.Predict(userImage);
-            var LBPresult = _faceRecognizerLBPH.Predict(userImage);
+            //var resultFish = _faceRecognizerFisher.Predict(userImage);
+            //var LBPresult = _faceRecognizerLBPH.Predict(userImage);
 
-            if (result.Label != -1 && resultFish.Label != -1 && LBPresult.Label != -1)
-            {
-                if (result.Label == resultFish.Label && resultFish.Label == LBPresult.Label)
-                {
-                    return result.Label;
-                }
-            }
-            else
-            {
-                return -1;
-            }
+            //if (result.Label != -1 && resultFish.Label != -1 && LBPresult.Label != -1)
+            //{
+            //    if (result.Label == resultFish.Label && resultFish.Label == LBPresult.Label)
+            //    {
+            //        return result.Label;
+            //    }
+            //}
+            //else
+            //{
+            //    return -1;
+            //}
 
             return result.Label;
         }
 
-        public List<Mat> Recognize(Image<Gray, byte> userImage, List<Mat> faceImages)
+        public string Recognize(Image<Gray, byte> userImage, List<Mat> faceImages, List<string> faceLabels)
         {
-            var result = new List<Mat>();
+            var result = string.Empty;
             long matchTime;
+            Mat homography;
+            VectorOfKeyPoint modelKeyPoints;
+            VectorOfKeyPoint observedKeyPoints;
 
-            foreach (var face in faceImages)
+            using (VectorOfVectorOfDMatch matches = new VectorOfVectorOfDMatch())
             {
-                result.Add(DrawMatches.Draw(userImage.Mat, face, out matchTime));
+                for (var i = 0; i < faceImages.Count; i++)
+                {
+                    Mat mask;
+                    DrawMatches.FindMatch(userImage.Mat, faceImages[i], out matchTime, out modelKeyPoints, out observedKeyPoints, matches, out mask, out homography);
 
+                    if (homography != null)
+                    {
+                        result = faceLabels[i];
+                    }
+                }
             }
 
             return result;
