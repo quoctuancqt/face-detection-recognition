@@ -1,0 +1,157 @@
+﻿<!DOCTYPE html>
+<html>
+<body>
+    <!--https://www.html5rocks.com/en/tutorials/getusermedia/intro/-->
+    <video id="vd" autoplay></video>
+    <script src="/node_modules/@aspnet/signalr/dist/browser/signalr.min.js"></script>
+    <script src="/node_modules/msgpack5/dist/msgpack5.min.js"></script>
+    <script src="/node_modules/@aspnet/signalr-protocol-msgpack/dist/browser/signalr-protocol-msgpack.min.js"></script>
+
+    <!--<script src="https://cdn.WebRTC-Experiment.com/RecordRTC.js"></script>-->
+    <script src="https://cdn.webrtc-experiment.com/MediaStreamRecorder.js"></script>
+
+    <script>
+        
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl("http://localhost:5000/hubs/Web-rtc", {})
+            //.withHubProtocol(new signalR.protocols.msgpack.MessagePackHubProtocol())
+            .build();
+
+        var queue = [];
+
+        var isProcessing = false;
+
+        var index = 1;
+
+        
+        connection.start().then(() => {
+            connection.invoke("StartConection", {});
+
+            connection.on('MessagerReceived', (msg) => {
+                isProcessing = false;
+                if (msg.streamVideo) {
+                    //var block = msg.streamVideo.buffer.split(";");
+
+                    //var contentType = block[0].split(":")[1];
+
+                    //var realData = block[1].split(",")[1];
+                    
+                    //const blob = base64toBlob(realData, { type: contentType });
+                    
+                    //const blobUrl = URL.createObjectURL(blob);
+
+                    //video.onload = function () {
+                    //    window.webkitURL.revokeObjectURL(blobUrl);
+                    //};
+                    //video.src = blobUrl;
+                    //video.src = URL.createObjectURL(blob);
+                    //console.log(blobUrl);
+                }
+            });
+
+        });
+
+        function base64toBlob(base64Data, contentType) {
+            contentType = contentType || '';
+            var sliceSize = 1024;
+            var byteCharacters = atob(base64Data);
+            var bytesLength = byteCharacters.length;
+            var slicesCount = Math.ceil(bytesLength / sliceSize);
+            var byteArrays = new Array(slicesCount);
+
+            for (var sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
+                var begin = sliceIndex * sliceSize;
+                var end = Math.min(begin + sliceSize, bytesLength);
+
+                var bytes = new Array(end - begin);
+                for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
+                    bytes[i] = byteCharacters[offset].charCodeAt(0);
+                }
+                byteArrays[sliceIndex] = new Uint8Array(bytes);
+            }
+            return new Blob(byteArrays, { type: contentType });
+        }
+
+        var mediaConstraints = {
+            video: true,
+            audio: true
+        };
+
+        navigator.getUserMedia(mediaConstraints, onMediaSuccess, onMediaError);
+
+        function onMediaSuccess(stream) {
+         
+            var mediaRecorder = new MediaStreamRecorder(stream);
+            //mediaRecorder.mimeType = 'video/webm'; // check this line for audio/wav
+            mediaRecorder.ondataavailable = function (blob) {
+                //console.log(blob);
+                
+                queue.push({ qBlob: blob, index: index });
+                index++;
+                if (queue.length === 0) return;
+
+                if (!isProcessing) {
+                    var item = queue.shift();
+                    var r = new FileReader();
+                    r.onload = (evt) => {
+
+                        StreamToServer({ Buffer: evt.target.result, Index: item.index });
+                    };
+                    r.readAsDataURL(item.qBlob);
+                }
+                
+            };
+            mediaRecorder.start(4000);
+        }
+
+        function onMediaError(e) {
+            console.error('media error', e);
+        }
+       
+        function StreamToServer(obj) {
+            connection.invoke("SendStream", obj);
+        }
+
+        function parseFile(file, callback) {
+
+            var fileSize = file.size;
+            var chunkSize = 64 * 1024; // bytes
+            var offset = 0;
+            var self = this; // we need a reference to the current object
+            var chunkReaderBlock = null;
+
+            var readEventHandler = function (evt) {
+
+                if (evt.target.error == null) {
+                    offset += evt.target.result.length;
+                    //console.log(evt.target.result);
+                    callback(evt.target.result, offset, fileSize); // callback for handling read chunk
+
+                } else {
+                    console.log("Read error: " + evt.target.error);
+                    return;
+                }
+                if (offset >= fileSize) {
+                    console.log("Done reading file");
+                    return;
+                }
+
+                // of to the next chunk
+                chunkReaderBlock(offset, chunkSize, file);
+            }
+
+            chunkReaderBlock = function (_offset, length, _file) {
+
+                var r = new FileReader();
+                var blob = _file.slice(_offset, length + _offset);
+                r.onload = readEventHandler;
+                r.readAsDataURL(blob);
+            }
+
+            // now let's start the read with the first block
+            chunkReaderBlock(offset, chunkSize, file);
+        }
+    </script>
+
+</body>
+</html>

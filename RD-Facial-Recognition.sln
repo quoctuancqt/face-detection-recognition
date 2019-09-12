@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29215.179
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Facial.Recognize.Core", "Facial.Recognize.Core\Facial.Recognize.Core.csproj", "{594F8767-6EAE-4FF8-BB26-E62B569910D6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facial.Recognize.Web", "Facial.Recognize.Web\Facial.Recognize.Web.csproj", "{C2EC712A-F2A7-4506-8D64-F242D78E1B87}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{594F8767-6EAE-4FF8-BB26-E62B569910D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{594F8767-6EAE-4FF8-BB26-E62B569910D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{594F8767-6EAE-4FF8-BB26-E62B569910D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{594F8767-6EAE-4FF8-BB26-E62B569910D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2EC712A-F2A7-4506-8D64-F242D78E1B87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2EC712A-F2A7-4506-8D64-F242D78E1B87}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2EC712A-F2A7-4506-8D64-F242D78E1B87}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2EC712A-F2A7-4506-8D64-F242D78E1B87}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {36DA9688-4FB4-4558-90F2-4E17967D92E6}
+	EndGlobalSection
+EndGlobal

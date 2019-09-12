@@ -1,0 +1,170 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <input type="button" class="btn btn-primary" onclick="startGrabFrame()" value="Start" />
+        </div>
+        <div class="col-md-3">
+            <input type="button" class="btn btn-secondary" onclick="stopGrabFrame()" value="Stop" />
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col"><img id="face" width="320" /></div>
+    </div>
+    <div class="row mt-3" id="training-face" style="display: none">
+        <div class="col-md-6">
+            <form>
+                <div class="form-group">
+                    <label class="col-form-label">Username: </label>
+                    <input class="form-control" id="txtUsername" />
+                </div>
+                <div class="form-group">
+                    <label class="col-form-label">UserId: </label>
+                    <input class="form-control" id="txtUserId" />
+                </div>
+                <div class="form-group">
+                    <input type="button" class="btn btn-primary" value="Train" onclick="trainFace()" />
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    var width = 320;
+    var height = 240;
+    var track;
+    var interval, trainingInterval;
+    var index = 1;
+    var face = document.getElementById('face');
+    var intervalLimitation = 0;
+    var trainingFace = document.getElementById('training-face');
+
+    var connection = new signalR.HubConnectionBuilder()
+        .withUrl("http://localhost:5000/Web-rtc", {})
+        .build();
+
+
+    connection.start().then(() => {
+        connection.invoke("StartConection", {});
+
+        connection.on('MessagerReceived', (msg) => {
+            if (msg.streamVideo) {
+                var block = msg.streamVideo.buffer.split(";");
+
+                var contentType = block[0].split(":")[1];
+
+                var realData = block[1].split(",")[1];
+
+                const blob = base64toBlob(realData, { type: contentType });
+
+                const blobUrl = URL.createObjectURL(blob);
+
+                face.onload = function () {
+                    window.webkitURL.revokeObjectURL(blobUrl);
+                };
+                face.src = blobUrl;
+            }
+        });
+    });
+
+    function base64toBlob(base64Data, contentType) {
+        contentType = contentType || '';
+        var sliceSize = 1024;
+        var byteCharacters = atob(base64Data);
+        var bytesLength = byteCharacters.length;
+        var slicesCount = Math.ceil(bytesLength / sliceSize);
+        var byteArrays = new Array(slicesCount);
+
+        for (var sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
+            var begin = sliceIndex * sliceSize;
+            var end = Math.min(begin + sliceSize, bytesLength);
+
+            var bytes = new Array(end - begin);
+            for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
+                bytes[i] = byteCharacters[offset].charCodeAt(0);
+            }
+            byteArrays[sliceIndex] = new Uint8Array(bytes);
+        }
+        return new Blob(byteArrays, { type: contentType });
+    }
+
+    var mediaConstraints = {
+        video: true,
+        audio: false
+    };
+
+    navigator.getUserMedia(mediaConstraints, onMediaSuccess, onMediaError);
+
+    function onMediaSuccess(stream) {
+        var video = document.createElement('video');
+        video.srcObject = stream;
+        track = stream.getVideoTracks()[0];
+    }
+
+    function processFrame(imageBitmap) {
+        index++;
+        var canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(imageBitmap, 0, 0, width, height);
+        var imgDataUrl = canvas.toDataURL('image/jpeg');
+        StreamToServer({ Buffer: imgDataUrl, Index: index });
+    }
+
+    function stopGrabFrame() {
+        trainingFace.style.display = 'none';
+        clearInterval(interval);
+        track.stop();
+    }
+
+    function startGrabFrame() {
+        trainingFace.style.display = 'block';
+        var imageCapture = new ImageCapture(track);
+        interval = setInterval(function () {
+            imageCapture.grabFrame()
+                .then(processFrame)
+                .catch(err => console.error('grabFrame() failed: ', err));
+        }, 1000);
+    }
+
+    function trainFace() {
+        var imageCapture = new ImageCapture(track);
+        trainingInterval = setInterval(function () {
+            imageCapture.grabFrame()
+                .then(function (imageBitmap) {
+                    if (intervalLimitation < 20) {
+                        console.log(`${intervalLimitation} training completed`);
+                        intervalLimitation++;
+                        var canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        canvas.getContext('2d').drawImage(imageBitmap, 0, 0, width, height);
+                        var imgDataUrl = canvas.toDataURL('image/jpeg');
+                        StreamToServer({ Buffer: imgDataUrl, Username: $('#txtUsername').val(), UserId: $('#txtUserId').val() }, true);
+                    }
+                    else {
+                        clearInterval(trainingInterval);
+                        intervalLimitation = 0;
+                    }
+                })
+                .catch(err => console.error('grabFrame() failed: ', err))
+        }, 1000);
+    }
+
+    function onMediaError(e) {
+        console.error('media error', e);
+    }
+
+    function StreamToServer(obj, isTraining) {
+        if (isTraining) {
+            connection.invoke("TrainFace", obj);
+        }
+        else {
+            connection.invoke("SendStream", obj);
+        }
+    }
+</script>
